@@ -5,6 +5,11 @@
 @section('content')
     <h1>SF Database</h1>
 
+    @include('admin.partials.filter-bar', [
+        'action' => route('admin.sf.index'),
+        'numberLabel' => 'SF',
+    ])
+
     <div class="toolbar">
         <span class="muted">Total: {{ $records->total() }} record(s)</span>
         <span>
@@ -42,7 +47,7 @@
                         <td>{{ $record->service }}</td>
                     </tr>
                 @empty
-                    <tr><td colspan="7" class="empty">No SF records yet.</td></tr>
+                    <tr><td colspan="7" class="empty">{{ $hasFilters ? 'No SF records match the current filters.' : 'No SF records yet.' }}</td></tr>
                 @endforelse
             </tbody>
         </table>

@@ -55,4 +55,44 @@
             document.body.removeChild(area);
         });
     });
+
+    // 3. Filter bar date fields: type the date (YYYY-MM-DD, or DD/MM/YYYY) or use the calendar button.
+    document.querySelectorAll('[data-date-input]').forEach(function (wrap) {
+        var text = wrap.querySelector('input[type="text"]');
+        var native = wrap.querySelector('.date-native');
+        var button = wrap.querySelector('[data-date-picker]');
+        if (!text || !native || !button) { return; }
+
+        function toIso(value) {
+            value = value.trim();
+            var m = /^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})$/.exec(value);
+            if (m) { return m[1] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[3]).slice(-2); }
+            m = /^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})$/.exec(value);
+            if (m) { return m[3] + '-' + ('0' + m[2]).slice(-2) + '-' + ('0' + m[1]).slice(-2); }
+            return null;
+        }
+
+        // Tidy a typed date when leaving the field; anything else is left for the server to report.
+        text.addEventListener('blur', function () {
+            var iso = toIso(text.value);
+            if (iso) { text.value = iso; }
+        });
+
+        button.addEventListener('click', function () {
+            native.value = toIso(text.value) || '';
+            try {
+                native.showPicker();
+            } catch (e) {
+                native.style.pointerEvents = 'auto';
+                native.focus();
+                native.click();
+                native.style.pointerEvents = '';
+            }
+        });
+
+        native.addEventListener('change', function () {
+            text.value = native.value;
+            text.focus();
+        });
+    });
 })();

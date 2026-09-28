@@ -67,7 +67,7 @@ h2 { font-size: 1.15rem; margin: 1.6rem 0 0.6rem; }
 /* ---- forms ---- */
 .field { margin-bottom: 1rem; }
 label { display: block; font-weight: 600; margin-bottom: 0.3rem; }
-input[type="text"], input[type="password"], select {
+input[type="text"], input[type="password"], input[type="search"], select {
     width: 100%;
     padding: 0.55rem 0.7rem;
     border: 1px solid #b9c2d0;
@@ -123,6 +123,19 @@ table.data tbody tr:last-child td { border-bottom: 0; }
 table.data td.empty { text-align: center; color: var(--muted); padding: 1.5rem; }
 .badge { display: inline-block; padding: 0.1rem 0.55rem; border-radius: 999px; font-size: 0.8rem; background: #e8eef9; color: #1f3f7a; }
 .badge-admin { background: #fdeccb; color: #7a4a05; }
+
+/* ---- filter bar (SF / PF database) ---- */
+.filter-bar { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 0.75rem 1rem; margin: 0.75rem 0; padding: 0.9rem 1rem; }
+.filter-field { flex: 0 1 11rem; min-width: 9rem; }
+.filter-field-grow { flex: 1 1 14rem; }
+.filter-field label { font-size: 0.85rem; margin-bottom: 0.2rem; }
+.date-input { position: relative; display: flex; }
+.date-input input[type="text"] { padding-right: 2.4rem; }
+.date-picker-btn { position: absolute; top: 1px; right: 1px; bottom: 1px; width: 2.2rem; border: 0; border-radius: 0 5px 5px 0; background: transparent; cursor: pointer; font-size: 1rem; line-height: 1; }
+.date-picker-btn:hover { background: #eef1f6; }
+.date-native { position: absolute; right: 0; bottom: 0; width: 2.2rem; height: 100%; opacity: 0; pointer-events: none; }
+.filter-actions { display: flex; gap: 0.5rem; }
+.filter-errors { flex-basis: 100%; color: var(--danger); font-size: 0.9rem; }
 
 /* ---- pagination ---- */
 .pagination { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; justify-content: space-between; margin-top: 1rem; }

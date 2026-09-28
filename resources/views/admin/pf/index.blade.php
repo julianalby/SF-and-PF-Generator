@@ -5,6 +5,11 @@
 @section('content')
     <h1>PF Database</h1>
 
+    @include('admin.partials.filter-bar', [
+        'action' => route('admin.pf.index'),
+        'numberLabel' => 'PF',
+    ])
+
     <div class="toolbar">
         <span class="muted">Total: {{ $records->total() }} record(s)</span>
         <span>
@@ -44,7 +49,7 @@
                         <td>{{ $record->customer_name }}</td>
                     </tr>
                 @empty
-                    <tr><td colspan="8" class="empty">No PF records yet.</td></tr>
+                    <tr><td colspan="8" class="empty">{{ $hasFilters ? 'No PF records match the current filters.' : 'No PF records yet.' }}</td></tr>
                 @endforelse
             </tbody>
         </table>

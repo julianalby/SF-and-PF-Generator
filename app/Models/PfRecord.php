@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FiltersDatabaseRecords;
 use Database\Factories\PfRecordFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,6 +11,7 @@ class PfRecord extends Model
 {
     /** @use HasFactory<PfRecordFactory> */
     use HasFactory;
+    use FiltersDatabaseRecords;
 
     /**
      * Only what the user types is mass-assignable. `user`, `pf_number` and

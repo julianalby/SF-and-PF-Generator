@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\FiltersDatabaseRecords;
 use Database\Factories\SfRecordFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -10,6 +11,7 @@ class SfRecord extends Model
 {
     /** @use HasFactory<SfRecordFactory> */
     use HasFactory;
+    use FiltersDatabaseRecords;
 
     /**
      * Only what the user types is mass-assignable. `user`, `sf_number` and
