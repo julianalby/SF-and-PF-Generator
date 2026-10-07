@@ -10,30 +10,34 @@ use RuntimeException;
 /**
  * Atomic, concurrency-safe SF / PF number generation.
  *
- * Each sequence is one row in `number_sequences`; `next_number` is the number
- * the next record will receive. Numbers are NEVER derived from
- * MAX(sf_number) + 1 (which two simultaneous requests would both read).
+ * Each sequence is one row in `number_sequences`; `next_number` is now the
+ * next three-digit suffix the next record will receive. The YYMM prefix is
+ * generated from the creation time and is never stored in the counter.
+ * Numbers are NEVER derived from MAX(sf_number) + 1.
  */
 class SequenceService
 {
     /**
-     * Reserve and return the next number of a sequence ("SF" or "PF").
+     * Reserve and return the next generated number of a sequence ("SF" or "PF").
      *
      * MUST be called inside a database transaction, together with the INSERT
      * of the record that will carry the number. If that transaction rolls back,
-     * the counter increment rolls back with it, so a number is only consumed by
+     * the counter increment rolls back with it, so a suffix is only consumed by
      * a record that was actually saved.
+     *
+     * The suffix is intentionally continuous across months. Only the first four
+     * digits change with the creation year/month (YYMM).
      *
      * Why this is safe under concurrency:
      *  - The FIRST statement is an UPDATE (a write). The writer takes the
      *    database write lock immediately (SQLite) / the row lock (MySQL, Postgres)
-     *    and holds it until COMMIT, so a second request waits (bounded by
-     *    busy_timeout / lock wait) instead of reading the same value.
+     *    and holds it until COMMIT, so a second request waits instead of reading
+     *    the same value.
      *  - Starting the transaction with a read and upgrading to a write later is
      *    the classic SQLite deadlock/"database is locked" trap; we never do that.
      *  - The follow-up SELECT runs in the same transaction and therefore sees
      *    our own increment, not another request's.
-     *  - UNIQUE constraints on sf_number / pf_number are the last line of defence.
+     *  - UNIQUE constraints on sf_number / pf_number remain the last line of defence.
      */
     public function next(string $key): int
     {
@@ -50,8 +54,15 @@ class SequenceService
             throw new RuntimeException("Number sequence [{$key}] is missing from the number_sequences table.");
         }
 
-        $nextUnused = (int) NumberSequence::query()->where('key', $key)->value('next_number');
+        $nextSuffix = (int) NumberSequence::query()->where('key', $key)->value('next_number');
+        $suffix = $nextSuffix - 1; // the value the counter held before our increment
 
-        return $nextUnused - 1; // the value the counter held before our increment
+        if ($suffix < 0 || $suffix > 999) {
+            throw new RuntimeException('The SF/PF numbering suffix has exhausted its three-digit range (000-999).');
+        }
+
+        $prefix = now()->format('ym');
+
+        return (int) ($prefix . str_pad((string) $suffix, 3, '0', STR_PAD_LEFT));
     }
 }

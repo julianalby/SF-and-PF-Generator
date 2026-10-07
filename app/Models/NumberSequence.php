@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * One row per independent sequence ("SF", "PF").
- * `next_number` is the number the next record of that kind will receive.
+ * `next_number` is the next three-digit suffix that record will receive.
  * Never touch it directly: go through App\Services\SequenceService.
  */
 class NumberSequence extends Model

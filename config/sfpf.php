@@ -1,23 +1,23 @@
 <?php
 
 return [
-
     /*
     |--------------------------------------------------------------------------
-    | Initial number sequences
+    | Initial number sequence suffixes
     |--------------------------------------------------------------------------
     |
     | SF and PF are two completely independent sequences. These values are the
-    | numbers the FIRST record of each kind receives. They are only read once,
-    | by the create_number_sequences_table migration, which stores them in the
-    | number_sequences table. From then on the database row is the single
-    | source of truth; changing these values later has no effect.
+    | three-digit suffixes the FIRST record of each kind receives. They are only
+    | read by the create_number_sequences_table migration. From then on the
+    | database row is the single source of truth; changing these values later
+    | has no effect.
+    |
+    | The generated number itself is YYMM + this three-digit suffix.
     |
     */
-
     'sequences' => [
-        'SF' => (int) env('SF_START_NUMBER', 26090119),
-        'PF' => (int) env('PF_START_NUMBER', 26090138),
+        'SF' => (int) env('SF_START_NUMBER', 119),
+        'PF' => (int) env('PF_START_NUMBER', 138),
     ],
 
     /*
@@ -28,10 +28,9 @@ return [
     | Initial password for the users created by `php artisan db:seed`.
     | Leave empty (recommended) and the seeder generates a random password
     | for every new user and prints it once. Passwords are always hashed
-    | (Argon2id) before they are stored; nothing is kept in plaintext.
+    | (Argon2id) before being stored; nothing is kept in plaintext.
     |
     */
-
     'seed_password' => env('SEED_USER_PASSWORD'),
 
     /*
@@ -45,5 +44,4 @@ return [
 
     // How "Create Date" is shown (in APP_TIMEZONE).
     'date_format' => 'Y-m-d H:i:s',
-
 ];
