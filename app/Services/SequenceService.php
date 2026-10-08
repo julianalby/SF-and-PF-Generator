@@ -10,9 +10,13 @@ use RuntimeException;
 /**
  * Atomic, concurrency-safe SF / PF number generation.
  *
- * Each sequence is one row in `number_sequences`; `next_number` is now the
- * next three-digit suffix the next record will receive. The YYMM prefix is
- * generated from the creation time and is never stored in the counter.
+ * number = YYMM (creation month, APP_TIMEZONE) + 3-digit suffix 001-999.
+ * The suffix restarts at 001 every month.
+ *
+ * Each sequence is one row in `number_sequences`:
+ *   - month_prefix : the YYMM the counter is currently counting in
+ *   - next_number  : the suffix the NEXT record of that month will receive
+ *
  * Numbers are NEVER derived from MAX(sf_number) + 1.
  */
 class SequenceService
@@ -22,22 +26,14 @@ class SequenceService
      *
      * MUST be called inside a database transaction, together with the INSERT
      * of the record that will carry the number. If that transaction rolls back,
-     * the counter increment rolls back with it, so a suffix is only consumed by
-     * a record that was actually saved.
+     * the counter change (including a month reset) rolls back with it.
      *
-     * The suffix is intentionally continuous across months. Only the first four
-     * digits change with the creation year/month (YYMM).
-     *
-     * Why this is safe under concurrency:
-     *  - The FIRST statement is an UPDATE (a write). The writer takes the
-     *    database write lock immediately (SQLite) / the row lock (MySQL, Postgres)
-     *    and holds it until COMMIT, so a second request waits instead of reading
-     *    the same value.
-     *  - Starting the transaction with a read and upgrading to a write later is
-     *    the classic SQLite deadlock/"database is locked" trap; we never do that.
-     *  - The follow-up SELECT runs in the same transaction and therefore sees
-     *    our own increment, not another request's.
-     *  - UNIQUE constraints on sf_number / pf_number remain the last line of defence.
+     * Concurrency: the FIRST statement is a single UPDATE that does the month
+     * check, the reset and the increment in one go. It takes the write lock
+     * (SQLite) / row lock (MySQL, Postgres) immediately and holds it until
+     * COMMIT, so two requests can never read the same value, not even in the
+     * first seconds of a new month. UNIQUE constraints on sf_number / pf_number
+     * remain the last line of defence.
      */
     public function next(string $key): int
     {
@@ -45,23 +41,28 @@ class SequenceService
             throw new LogicException('A number sequence must be advanced inside a database transaction.');
         }
 
+        // Digits only (e.g. "2611"), so it is safe to embed in the SQL below.
+        $prefix = now()->format('ym');
+
+        // Same month  -> next_number + 1
+        // New month   -> next_number = 2, i.e. this record takes suffix 1.
         $updated = NumberSequence::query()
             ->where('key', $key)
-            ->increment('next_number');
+            ->update([
+                'next_number' => DB::raw("CASE WHEN month_prefix = '{$prefix}' THEN next_number + 1 ELSE 2 END"),
+                'month_prefix' => $prefix,
+            ]);
 
         if ($updated !== 1) {
             // Never fall back to "max + 1" or to 1: fail loudly instead of issuing wrong numbers.
             throw new RuntimeException("Number sequence [{$key}] is missing from the number_sequences table.");
         }
 
-        $nextSuffix = (int) NumberSequence::query()->where('key', $key)->value('next_number');
-        $suffix = $nextSuffix - 1; // the value the counter held before our increment
+        $suffix = (int) NumberSequence::query()->where('key', $key)->value('next_number') - 1;
 
-        if ($suffix < 0 || $suffix > 999) {
-            throw new RuntimeException('The SF/PF numbering suffix has exhausted its three-digit range (000-999).');
+        if ($suffix < 1 || $suffix > 999) {
+            throw new RuntimeException("The SF/PF numbering suffix for {$prefix} is outside its range (001-999).");
         }
-
-        $prefix = now()->format('ym');
 
         return (int) ($prefix . str_pad((string) $suffix, 3, '0', STR_PAD_LEFT));
     }
